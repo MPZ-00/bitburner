@@ -1,8 +1,7 @@
 # Bitburner
 
+## General
 [![Join Discord](https://img.shields.io/discord/415207508303544321)](https://discord.gg/TFc3hKD)
-
-[![Build Status](https://github.com/bitburner-official/bitburner-src/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/bitburner-official/bitburner-src/actions/workflows/ci.yml)
 
 Bitburner is a programming-based [incremental game](https://en.wikipedia.org/wiki/Incremental_game)
 that revolves around hacking and cyberpunk themes.
@@ -10,6 +9,9 @@ The game can be played at https://bitburner-official.github.io/ (release build),
 The location of the release build may change in the near future.
 
 See the [frequently asked questions](./doc/FAQ.md) for more information . To discuss the game or get help, join the [official Discord server](https://discord.gg/TFc3hKD).
+
+## Personal
+This is my collection of scripts used in the Game.
 
 # Documentation
 

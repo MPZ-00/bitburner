@@ -42,17 +42,14 @@ export function sanitizeParentheses(s) {
     const queue = [s]
     const visited = new Set()
     visited.add(s)
-    let found = false
 
     while (queue.length > 0) {
         const current = queue.shift()
 
         if (isValid(current)) {
             result.add(current)
-            found = true
+            continue
         }
-
-        if (found) continue
 
         for (let i = 0; i < current.length; i++) {
             if (current[i] !== '(' && current[i] !== ')') continue

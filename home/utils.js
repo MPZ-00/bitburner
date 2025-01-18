@@ -16,7 +16,7 @@ export function scanNetwork(ns, startServer, visited = new Set()) {
     }
 
     recursiveScan(startServer)
-    return servers
+    return servers.filter(server => server !== "home")
 }
 
 /** @param {NS} ns */
@@ -30,17 +30,37 @@ export function tryNuke(ns, server) {
     try {
         ns.nuke(server)
     } catch (error) {
-        ns.print(`Failed to nuke ${server}: ${error}`)
+        ns.tprint(`Failed to nuke ${server}: ${error}`)
     }
 }
 
 /** @param {NS} ns */
 export function canHack(ns, server) {
-    return ns.hasRootAccess(server) && ns.getServerRequiredHackingLevel(server) <= ns.getHackingLevel()
+    if (ns.getServerRequiredHackingLevel(server) > ns.getHackingLevel()) {
+        return {
+            success: false,
+            error: "Hacking level too low"
+        }
+    }
+    if (!ns.hasRootAccess(server)) {
+        return {
+            success: false,
+            error: "No root access"
+        }
+    }
+    return {
+        success: true
+    }
 }
 
-/** @param {NS} ns */
-export async function copyAndExecute(ns, server, fileNames, sourceServer, autoExecute) {
+/** 
+ * @param {NS} ns 
+ * @param {string} server target server
+ * @param {string[]} fileNames
+ * @param {string='home'} sourceServer
+ * @param {boolean=true} autoExecute
+ */
+export async function copyAndExecute(ns, server, fileNames, sourceServer = 'home', autoExecute = false) {
     let totalThreads = Math.floor((ns.getServerMaxRam(server) - ns.getServerUsedRam(server)) / ns.getScriptRam(fileNames[0]))
     const threadsPerFile = Math.floor(totalThreads / fileNames.length)
 
@@ -50,8 +70,8 @@ export async function copyAndExecute(ns, server, fileNames, sourceServer, autoEx
                 throw new Error(`${fileName} does not exist on ${sourceServer}`)
             }
 
-            await ns.scp(fileName, sourceServer, server)
-            ns.print(`Copied ${fileName} from ${sourceServer} to ${server}`)
+            ns.scp(fileName, server, sourceServer)
+            ns.tprint(`Copied ${fileName} from ${sourceServer} to ${server}`)
 
             if (autoExecute && threadsPerFile > 0) {
                 ns.exec(fileName, server, threadsPerFile)
@@ -64,4 +84,39 @@ export async function copyAndExecute(ns, server, fileNames, sourceServer, autoEx
             ns.tprint(`Error: ${error.message}`)
         }
     }
+}
+
+/**
+ * Parses command-line arguments into an options object.
+ * Supports arguments like `--flag`, `--key=value`, and positional arguments.
+ *
+ * @param {NS} ns - Bitburner's NS object.
+ * @param {string[]} args - Command-line arguments (ns.args).
+ * @param {Object} defaults - Default values for options.
+ * @return {Object} Parsed arguments with flags, key-value pairs, and positional arguments.
+ */
+export function parseArguments(ns, args, defaults = {}) {
+    const options = {
+        ...defaults,
+        _positional: []
+    } // Clone defaults and add _positional array
+
+    for (const arg of args) {
+        if (arg.startsWith("--")) {
+            const [key, value] = arg.slice(2).split("=")
+
+            if (value === undefined) {
+                // Handle flags like --execute
+                options[key] = true
+            } else {
+                // Handle key-value pairs like --root=home
+                options[key] = value
+            }
+        } else {
+            // Collect positional arguments
+            options._positional.push(arg)
+        }
+    }
+
+    return options
 }

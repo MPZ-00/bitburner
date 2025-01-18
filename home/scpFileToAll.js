@@ -12,6 +12,7 @@ export async function main(ns) {
         rootServer: "home", // Default root server
         execute: false // Default execution flag
     }
+
     const helpUsage = "Usage: run scpFileToAll.js [file names...] [source server] [--execute] [--root='value']"
 
     // Parse the arguments
@@ -47,11 +48,28 @@ export async function main(ns) {
     let hackedServers = 0
     let failedNukes = 0
     let skippedServers = 0
+    let insufficientPorts = 0
 
     const serversToVisit = scanNetwork(ns, rootServer)
 
     for (const server of serversToVisit) {
         totalServers++
+
+        const requiredPorts = ns.getServerNumPortsRequired(server)
+        const availablePortTools = [
+            ns.fileExists("BruteSSH.exe", "home") && ns.brutessh(server),
+            ns.fileExists("FTPCrack.exe", "home") && ns.ftpcrack(server),
+            ns.fileExists("relaySMTP.exe", "home") && ns.relaysmtp(server),
+            ns.fileExists("HTTPWorm.exe", "home") && ns.httpworm(server),
+            ns.fileExists("SQLInject.exe", "home") && ns.sqlinject(server)
+        ].filter(Boolean).length
+
+        if (requiredPorts > availablePortTools) {
+            ns.tprint(`Skipping ${server}, requires ${requiredPorts} ports but only ${availablePortTools} tools available`)
+            insufficientPorts++
+            skippedServers++
+            continue
+        }
 
         if (!ns.hasRootAccess(server)) {
             try {
@@ -92,6 +110,7 @@ export async function main(ns) {
     ns.tprint(`Total Servers Scanned: ${totalServers}`)
     ns.tprint(`Successfully Hacked: ${hackedServers}`)
     ns.tprint(`Failed Nukes: ${failedNukes}`)
+    ns.tprint(`Skipped Servers Due to Insufficient Ports: ${insufficientPorts}`)
     ns.tprint(`Skipped Servers: ${skippedServers}`)
     ns.tprint("Finished processing files for all rooted servers.")
 }

@@ -10,7 +10,7 @@ import {
 export async function main(ns) {
     const defaults = {
         rootServer: "home", // Default root server
-        execute: false, // Default execution flag
+        execute: false // Default execution flag
     }
     const helpUsage = "Usage: run scpFileToAll.js [file names...] [source server] [--execute] [--root='value']"
 
@@ -37,34 +37,61 @@ export async function main(ns) {
         return
     }
 
-    // Print parsed arguments for debugging (optional)
     ns.tprint(`Root Server: ${rootServer}`)
     ns.tprint(`Execute Flag: ${execute}`)
     ns.tprint(`File Names: ${fileNames.join(", ")}`)
     ns.tprint(`Source Server: ${sourceServer}`)
 
-    // Add your logic for copying files and optionally executing them here
-    ns.tprint("Processing files...")
+    // Statistics tracking
+    let totalServers = 0
+    let hackedServers = 0
+    let failedNukes = 0
+    let skippedServers = 0
 
     const serversToVisit = scanNetwork(ns, rootServer)
 
     for (const server of serversToVisit) {
+        totalServers++
+
         if (!ns.hasRootAccess(server)) {
-            tryNuke(ns, server)
+            try {
+                tryNuke(ns, server)
+            } catch (e) {
+                ns.tprint(`Failed to nuke ${server}: ${e.error}`)
+                failedNukes++
+                skippedServers++
+                continue
+            }
         }
 
         if (!ns.hasRootAccess(server)) {
             ns.tprint(`Skipping ${server}, no Root access`)
+            skippedServers++
             continue
         }
 
         let canHackResult = canHack(ns, server)
         if (canHackResult.success) {
             await copyAndExecute(ns, server, fileNames, sourceServer, execute)
+            hackedServers++
+
+            // Verify the script is running
+            const processes = ns.ps(server)
+            const running = processes.some((p) => fileNames.includes(p.filename))
+            if (!running) {
+                ns.tprint(`Warning: Script failed to execute on ${server}`)
+            }
             continue
         }
         ns.tprint(`Skipping ${server}, ${canHackResult.error}`)
+        skippedServers++
     }
 
+    // Output final statistics
+    ns.tprint("----- Summary -----")
+    ns.tprint(`Total Servers Scanned: ${totalServers}`)
+    ns.tprint(`Successfully Hacked: ${hackedServers}`)
+    ns.tprint(`Failed Nukes: ${failedNukes}`)
+    ns.tprint(`Skipped Servers: ${skippedServers}`)
     ns.tprint("Finished processing files for all rooted servers.")
 }

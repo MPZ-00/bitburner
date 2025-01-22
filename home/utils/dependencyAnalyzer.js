@@ -1,9 +1,12 @@
 import {
-    cprint,
+    tcprint,
     linesplit,
     linesplitTop,
     linesplitBottom
 } from "utils/customprint.js"
+import {
+    scanNetwork
+} from "../utils.js"
 
 /**
  * Analyzes all servers, checks for file imports (including multiline imports),
@@ -13,17 +16,17 @@ import {
  */
 export async function main(ns) {
     const homeServer = "home" // Source server for missing files
-    const servers = scanAllServers(ns) // Get all servers
+    const servers = scanNetwork(ns, homeServer) // gets all servers on the network without duplicates, home and darkweb
 
     linesplitTop(ns, true)
-    cprint(ns, ["Dependency Analyzer Started"], true)
+    tcprint(ns, "Dependency Analyzer Started")
     linesplit(ns, true)
 
     for (const server of servers) {
         const files = ns.ls(server, ".js") // Get all JavaScript files on the server
         if (files.length === 0) continue // Skip if no JS files
 
-        cprint(ns, [`Analyzing server: ${server}`], true)
+        tcprint(ns, `Analyzing server: ${server}`)
 
         for (const file of files) {
             const content = ns.read(file) // Read file content
@@ -31,41 +34,18 @@ export async function main(ns) {
 
             for (const importedFile of imports) {
                 if (!ns.fileExists(importedFile, server)) {
-                    cprint(ns, [`File ${importedFile} missing on ${server}. Copying from ${homeServer}...`], true)
-                    await ns.scp(importedFile, homeServer, server) // Copy missing file from home
+                    tcprint(ns, `File ${importedFile} missing on ${server}. Copying from ${homeServer}...`)
+                    await ns.scp(importedFile, server, homeServer) // Copy missing file from home
                 } else {
-                    cprint(ns, [`File ${importedFile} already exists on ${server}.`], true)
+                    tcprint(ns, `File ${importedFile} already exists on ${server}.`)
                 }
             }
         }
     }
 
     linesplit(ns, true)
-    cprint(ns, ["Dependency analysis and copying completed!"], true)
+    tcprint(ns, "Dependency analysis and copying completed!")
     linesplitBottom(ns, true)
-}
-
-/**
- * Scans the network and retrieves all servers.
- *
- * @param {NS} ns - Bitburner NS object.
- * @return {string[]} - List of all servers.
- */
-function scanAllServers(ns) {
-    const visited = new Set()
-    const stack = ["home"]
-    const servers = []
-
-    while (stack.length > 0) {
-        const current = stack.pop()
-        if (!visited.has(current)) {
-            visited.add(current)
-            servers.push(current)
-            stack.push(...ns.scan(current))
-        }
-    }
-
-    return servers
 }
 
 /**

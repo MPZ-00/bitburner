@@ -134,15 +134,3 @@ export function parseArguments(ns, args, defaults = {}) {
 
     return options
 }
-
-function linesplit(ns, terminal = false, max = 50, char = "─", prefix = "├", suffix = "┤") {
-    let maxLines = Math.max(max, 10)
-    maxLines -= (prefix.length + suffix.length)
-
-    const line = char.repeat(maxLines)
-    const lineSplit = prefix + line + suffix
-    if (terminal) {
-        ns.tprint(lineSplit)
-    }
-    ns.print(lineSplit)
-}

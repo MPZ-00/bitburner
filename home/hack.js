@@ -1,15 +1,12 @@
-import {
-    cprint,
-    linesplit,
-    linesplitTop
-} from "./utils/customprint.js"
-
 /** @param {NS} ns */
 export async function main(ns) {
     let targetServer = ns.args[0]
 
     if (ns.args.length < 1) {
-        throw new Error(`Missing targetServer`)
+        linesplitTop(ns, true)
+        tcprint(ns, `Usage: run hack.js [server]`)
+        linesplitBottom(ns, true)
+        return
     }
 
     let securityLevelMin
@@ -17,16 +14,16 @@ export async function main(ns) {
     let serverMaxMoney
     let serverMoneyAvailable
 
-    linesplitTop(ns)
     while (true) {
         securityLevelMin = ns.getServerMinSecurityLevel(targetServer) // Get the Min Security Level
         currentSecurityLevel = ns.getServerSecurityLevel(targetServer) // Get max money for server
 
+        linesplit(ns)
         cprint(ns, "Starting attack on " + targetServer + " with " + ns.getHostname() + "...")
 
         while (currentSecurityLevel > securityLevelMin + 5) {
             linesplit(ns)
-            cprint(ns, targetServer + " min security level is " + securityLevelMin)
+            cprint(ns, "" + targetServer + " min security level is " + securityLevelMin)
             cprint(ns, "Current security level on " + targetServer + " is " + ns.formatNumber(currentSecurityLevel, "0.00") + ".")
             cprint(ns, "Weakening " + targetServer + " with " + ns.getHostname() + "...")
 
@@ -42,9 +39,9 @@ export async function main(ns) {
 
         while (serverMoneyAvailable < (serverMaxMoney * 0.75)) {
             linesplit(ns)
-            cprint(ns, targetServer + " Current Money: " + ns.formatNumber(serverMoneyAvailable, "$0.000a"))
-            cprint(ns, targetServer + " Max Money: " + ns.formatNumber(serverMaxMoney, "$0.000a"))
-            cprint(ns, "Growing " + targetServer + " with " + ns.getHostname() + " to " + ns.formatNumber(serverMaxMoney * 0.75, "$0.000a") + "...")
+            cprint(ns, "" + targetServer + " Current Money: " + ns.formatNumber(serverMoneyAvailable, 3))
+            cprint(ns, "" + targetServer + " Max Money: " + ns.formatNumber(serverMaxMoney, 3))
+            cprint(ns, "Growing " + targetServer + " with " + ns.getHostname() + " to " + ns.formatNumber(serverMaxMoney * 0.75, 3) + "...")
 
             await ns.grow(targetServer)
             serverMoneyAvailable = ns.getServerMoneyAvailable(targetServer)
@@ -53,14 +50,18 @@ export async function main(ns) {
 
         linesplit(ns)
         cprint(ns, "Optimal current money on " + targetServer + " reached !!!")
-        cprint(ns, targetServer + " Current Money: " + ns.formatNumber(serverMoneyAvailable, "$0.000a"))
-        cprint(ns, targetServer + " Max Money: " + ns.formatNumber(serverMaxMoney, "$0.000a"))
+        cprint(ns, targetServer + " Current Money: " + ns.formatNumber(serverMoneyAvailable, 3))
+        cprint(ns, targetServer + " Max Money: " + ns.formatNumber(serverMaxMoney, 3))
         linesplit(ns)
         cprint(ns, "Hacking " + targetServer + " with " + ns.getHostname() + "...")
-        linesplit(ns)
 
         await ns.hack(targetServer)
         serverMoneyAvailable = ns.getServerMoneyAvailable(targetServer)
         serverMaxMoney = ns.getServerMaxMoney(targetServer)
     }
 }
+function linesplit(t, n = !1, i = 50, e = "─", l = "├", p = "┤") { let r = Math.max(i, 10); r -= l.length + p.length; let o = e.repeat(r), f = l + o + p; n ? t.tprint(f) : t.print(f) }
+function linesplitTop(t, n = !1, i = 50, e = "─", l = "┌", p = "┐") { linesplit(t, n, i, e, l, p) }
+function linesplitBottom(t, n = !1, i = 50, e = "─", l = "└", p = "┘") { linesplit(t, n, i, e, l, p) }
+function cprint(t, n, i = !1, e = 50, l = "│", p = "│") { let r = Math.max(e, 50); r -= l.length + p.length; let o = ""; for (let f of n) { if (o.length + 1 > r) { let $ = o.padEnd(r, " "), c = l + $ + p; i ? t.tprint(c) : t.print(c), o = "" } o += f } if (o.length > 0) { let x = o.padEnd(r, " "), g = l + x + p; i ? t.tprint(g) : t.print(g) } }
+function tcprint(t, n, i = 50) { cprint(t, n, !0, i) }

@@ -50,19 +50,30 @@ export async function main(ns) {
 
 /**
  * Parses a file's content to extract imported file names, including multiline imports.
+ * Adjusts relative imports to ensure they are valid paths.
  *
+ * @param {string} filePath - The current file's path.
  * @param {string} content - The file content.
- * @return {string[]} - List of imported file names.
+ * @return {string[]} - List of imported file names with normalized paths.
  */
-function parseImports(content) {
+function parseImports(filePath, content) {
     const importRegex = /import\s+?\{[\s\S]*?\}\s+?from\s+['"](.+?)['"]/g
     const simpleImportRegex = /import .*? from ['"](.+?)['"]/g
     const imports = []
     let match
 
+    // Normalize relative imports
+    const normalizePath = (importPath) => {
+        if (importPath.startsWith('./') || importPath.startsWith('../')) {
+            const basePath = filePath.substring(0, filePath.lastIndexOf('/') + 1)
+            return basePath + importPath
+        }
+        return importPath // Absolute or already normalized
+    }
+
     // Match simple and multiline imports
     while ((match = simpleImportRegex.exec(content)) !== null || (match = importRegex.exec(content)) !== null) {
-        imports.push(match[1]) // Add the imported file name to the list
+        imports.push(normalizePath(match[1])) // Normalize and add to the list
     }
 
     return imports

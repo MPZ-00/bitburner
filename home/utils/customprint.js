@@ -55,6 +55,7 @@ export function linesplitBottom(ns, terminal = false, max = 50, char = "─", pr
 /**
  * Prints text with a border, wrapping to new lines if it exceeds the max length.
  * Each line is padded with spaces to ensure the suffix aligns at the specified max position.
+ * Entire words are moved to a new line if they exceed the limit.
  *
  * @param {NS} ns - Bitburner NS object.
  * @param {string[]} args - Array of strings to print.
@@ -67,11 +68,12 @@ export function cprint(ns, args, terminal = false, max = 50, prefix = "│", suf
     let maxLines = Math.max(max, 50) // Ensure minimum length
     maxLines -= (prefix.length + suffix.length) // Adjust for prefix and suffix
 
-    const text = args // no join needed
+    args = [args] // Ensure args is an array
+    const words = args.join(' ').split(' ') // Split text into words
     let currentLine = ''
 
-    for (const char of text) {
-        if (currentLine.length + 1 > maxLines) {
+    for (const word of words) {
+        if ((currentLine + word).length > maxLines) {
             // Print the current line and reset
             const paddedLine = currentLine.padEnd(maxLines, ' ')
             const lineSplit = prefix + paddedLine + suffix
@@ -82,7 +84,7 @@ export function cprint(ns, args, terminal = false, max = 50, prefix = "│", suf
             }
             currentLine = ''
         }
-        currentLine += char
+        currentLine += (currentLine.length > 0 ? ' ' : '') + word
     }
 
     // Print any remaining text

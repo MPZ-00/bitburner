@@ -1,3 +1,9 @@
+import {
+    cprint,
+    linesplitMiddle,
+    tcprint
+} from "./utils/customprint"
+
 /** 
  * @param {NS} ns 
  * @param {string} startServer
@@ -85,17 +91,17 @@ export async function copyAndExecute(ns, server, fileNames, sourceServer = 'home
             }
 
             ns.scp(fileName, server, sourceServer)
-            ns.print(`Copied ${fileName} from ${sourceServer} to ${server}`)
+            tcprint(ns, `Copied ${fileName} from ${sourceServer} to ${server}`)
 
             if (autoExecute && threadsPerFile > 0) {
-                ns.exec(fileName, server, threadsPerFile)
-                ns.print(`Executed ${fileName} on ${server} with ${threadsPerFile} threads`)
+                ns.exec(fileName, server, threadsPerFile, server)
+                cprint(ns, `Executed ${fileName} on ${server} with ${threadsPerFile} threads`)
             } else if (autoExecute) {
-                ns.print(`Not enough threads for ${fileName} on ${server}`)
+                cprint(ns, `Not enough threads for ${fileName} on ${server}`)
             }
-        } catch (error) {
-            ns.print(`Error handling ${fileName} on ${server}: ${error.message}`)
-            ns.tprint(`Error: ${error.message}`)
+        } catch (e) {
+            cprint(ns, `Error handling ${fileName} on ${server}: ${e.message}`)
+            tcprint(ns, `Error: ${e}`)
         }
     }
 }

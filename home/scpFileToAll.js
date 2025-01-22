@@ -4,7 +4,13 @@ import {
     canHack,
     copyAndExecute,
     parseArguments
-} from "utils.js"
+} from "./utils.js"
+import {
+    linesplitMiddle,
+    linesplitBottom,
+    tcprint,
+    linesplitTop
+} from "./utils/customprint.js"
 
 /** @param {NS} ns */
 export async function main(ns) {
@@ -20,7 +26,9 @@ export async function main(ns) {
 
     // Check for usage errors
     if (args._positional.length < 1) {
-        ns.tprint(helpUsage)
+        linesplitTop(ns, true)
+        tcprint(ns, helpUsage)
+        linesplitBottom(ns, true)
         return
     }
 
@@ -34,14 +42,15 @@ export async function main(ns) {
     const sourceServer = _positional[_positional.length - 1] // Last positional argument is the source server
 
     if (fileNames.length === 0) {
-        ns.tprint(helpUsage)
+        tcprint(ns, helpUsage)
         return
     }
 
-    ns.tprint(`Root Server: ${rootServer}`)
-    ns.tprint(`Execute Flag: ${execute}`)
-    ns.tprint(`File Names: ${fileNames.join(", ")}`)
-    ns.tprint(`Source Server: ${sourceServer}`)
+    linesplitTop(ns, true)
+    tcprint(ns, `Root Server: ${rootServer}`)
+    tcprint(ns, `Execute Flag: ${execute}`)
+    tcprint(ns, `File Names: ${fileNames.join(", ")}`)
+    tcprint(ns, `Source Server: ${sourceServer}`)
 
     // Statistics tracking
     let totalServers = 0
@@ -53,6 +62,7 @@ export async function main(ns) {
     const serversToVisit = scanNetwork(ns, rootServer)
 
     for (const server of serversToVisit) {
+        linesplitMiddle(ns, true)
         totalServers++
 
         const requiredPorts = ns.getServerNumPortsRequired(server)
@@ -65,7 +75,7 @@ export async function main(ns) {
         ].filter(Boolean).length
 
         if (requiredPorts > availablePortTools) {
-            ns.tprint(`Skipping ${server}, requires ${requiredPorts} ports but only ${availablePortTools} tools available`)
+            tcprint(ns, `Skipping '${server}', requires ${requiredPorts} ports but only ${availablePortTools} tools available`)
             insufficientPorts++
             skippedServers++
             continue
@@ -75,7 +85,7 @@ export async function main(ns) {
             try {
                 tryNuke(ns, server)
             } catch (e) {
-                ns.tprint(`Failed to nuke ${server}: ${e.error}`)
+                tcprint(ns, `Failed to nuke '${server}': ${e.error}`)
                 failedNukes++
                 skippedServers++
                 continue
@@ -83,34 +93,37 @@ export async function main(ns) {
         }
 
         if (!ns.hasRootAccess(server)) {
-            ns.tprint(`Skipping ${server}, no Root access`)
+            tcprint(ns, `Skipping '${server}', no Root access`)
+            linesplitMiddle(ns, true)
             skippedServers++
             continue
         }
 
         let canHackResult = canHack(ns, server)
         if (canHackResult.success) {
-            await copyAndExecute(ns, server, fileNames, sourceServer, execute)
+            await copyAndExecute(ns, server, fileNames, sourceServer, execute, server)
             hackedServers++
 
             // Verify the script is running
             const processes = ns.ps(server)
             const running = processes.some((p) => fileNames.includes(p.filename))
             if (!running) {
-                ns.tprint(`Warning: Script failed to execute on ${server}`)
+                tcprint(ns, `Warning: Script failed to execute on '${server}'`)
             }
             continue
         }
-        ns.tprint(`Skipping ${server}, ${canHackResult.error}`)
+        tcprint(ns, `Skipping '${server}', ${canHackResult.error}`)
         skippedServers++
     }
 
     // Output final statistics
-    ns.tprint("----- Summary -----")
-    ns.tprint(`Total Servers Scanned: ${totalServers}`)
-    ns.tprint(`Successfully Hacked: ${hackedServers}`)
-    ns.tprint(`Failed Nukes: ${failedNukes}`)
-    ns.tprint(`Skipped Servers Due to Insufficient Ports: ${insufficientPorts}`)
-    ns.tprint(`Skipped Servers: ${skippedServers}`)
-    ns.tprint("Finished processing files for all rooted servers.")
+    linesplitMiddle(ns, true)
+    tcprint(ns, "                    SUMMARY")
+    tcprint(ns, `Total Servers Scanned: ${totalServers}`)
+    tcprint(ns, `Successfully Hacked: ${hackedServers}`)
+    tcprint(ns, `Failed Nukes: ${failedNukes}`)
+    tcprint(ns, `Skipped Servers Due to Insufficient Ports: ${insufficientPorts}`)
+    tcprint(ns, `Skipped Servers: ${skippedServers}`)
+    tcprint(ns, "Finished processing files for all rooted servers")
+    linesplitBottom(ns, true)
 }

@@ -23,7 +23,7 @@ export async function main(ns) {
 
         while (currentSecurityLevel > securityLevelMin + 5) {
             linesplit(ns)
-            cprint(ns, "" + targetServer + " min security level is " + securityLevelMin)
+            cprint(ns, targetServer + " min security level is " + securityLevelMin)
             cprint(ns, "Current security level on " + targetServer + " is " + ns.formatNumber(currentSecurityLevel, "0.00") + ".")
             cprint(ns, "Weakening " + targetServer + " with " + ns.getHostname() + "...")
 

@@ -31,6 +31,20 @@ export function linesplit(ns, terminal = false, max = 50, char = "─", prefix =
  * @param {boolean} terminal - If true, use tprint; otherwise, use print.
  * @param {number} max - Maximum length of the line (default: 50).
  * @param {string} char - Character used for the line (default: '─').
+ * @param {string} prefix - Prefix for the line (default: '├').
+ * @param {string} suffix - Suffix for the line (default: '┤').
+ */
+export function linesplitMiddle(ns, terminal = false, max = 50, char = "─", prefix = "├", suffix = "┤") {
+    linesplit(ns, terminal, max, char, prefix, suffix)
+}
+
+/**
+ * Prints a horizontal line split with customizable borders and character.
+ *
+ * @param {NS} ns - Bitburner NS object.
+ * @param {boolean} terminal - If true, use tprint; otherwise, use print.
+ * @param {number} max - Maximum length of the line (default: 50).
+ * @param {string} char - Character used for the line (default: '─').
  * @param {string} prefix - Prefix for the line (default: '┌').
  * @param {string} suffix - Suffix for the line (default: '┐').
  */

@@ -45,6 +45,7 @@ export async function main(ns) {
             continue
         }
         crackedServers += ns.run(script, 1, server)
+        rootedServers += ns.hasRootAccess(server)
     }
 
     linesplit(ns, true)

@@ -13,7 +13,7 @@ export async function main(ns) {
 
     linesplitTop(ns, true)
     cprint(ns, `Hacknet Manager Started`, true)
-    linesplit(ns, true)
+    linesplitBottom(ns, true)
 
     while (true) {
         var budget = ns.getServerMoneyAvailable('home')

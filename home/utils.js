@@ -1,4 +1,9 @@
-/** @param {NS} ns */
+/** 
+ * @param {NS} ns 
+ * @param {string} startServer
+ * @param {Set<any>?} visited
+ * @returns {Set<any>}
+ */
 export function scanNetwork(ns, startServer, visited = new Set()) {
     const servers = []
 
@@ -16,10 +21,14 @@ export function scanNetwork(ns, startServer, visited = new Set()) {
     }
 
     recursiveScan(startServer)
-    return servers.filter(server => server !== "home")
+    return servers.filter(server => server !== "home" && server !== "darkweb")
 }
 
-/** @param {NS} ns */
+/**
+ * @param {NS} ns 
+ * @param {string} server
+ * @returns boolean
+ */
 export function tryNuke(ns, server) {
     if (ns.fileExists("BruteSSH.exe", "home")) ns.brutessh(server)
     if (ns.fileExists("FTPCrack.exe", "home")) ns.ftpcrack(server)
@@ -30,11 +39,16 @@ export function tryNuke(ns, server) {
     try {
         ns.nuke(server)
     } catch (error) {
-        ns.tprint(`Failed to nuke ${server}: ${error}`)
+        ns.print(`Failed to nuke ${server}: ${error}`)
+        return false
     }
+    return true
 }
 
-/** @param {NS} ns */
+/**
+ * @param {NS} ns 
+ * @param {string} server
+ */
 export function canHack(ns, server) {
     if (ns.getServerRequiredHackingLevel(server) > ns.getHackingLevel()) {
         return {
@@ -71,11 +85,11 @@ export async function copyAndExecute(ns, server, fileNames, sourceServer = 'home
             }
 
             ns.scp(fileName, server, sourceServer)
-            ns.tprint(`Copied ${fileName} from ${sourceServer} to ${server}`)
+            ns.print(`Copied ${fileName} from ${sourceServer} to ${server}`)
 
             if (autoExecute && threadsPerFile > 0) {
                 ns.exec(fileName, server, threadsPerFile)
-                ns.tprint(`Executed ${fileName} on ${server} with ${threadsPerFile} threads`)
+                ns.print(`Executed ${fileName} on ${server} with ${threadsPerFile} threads`)
             } else if (autoExecute) {
                 ns.print(`Not enough threads for ${fileName} on ${server}`)
             }
@@ -119,4 +133,16 @@ export function parseArguments(ns, args, defaults = {}) {
     }
 
     return options
+}
+
+function linesplit(ns, terminal = false, max = 50, char = "─", prefix = "├", suffix = "┤") {
+    let maxLines = Math.max(max, 10)
+    maxLines -= (prefix.length + suffix.length)
+
+    const line = char.repeat(maxLines)
+    const lineSplit = prefix + line + suffix
+    if (terminal) {
+        ns.tprint(lineSplit)
+    }
+    ns.print(lineSplit)
 }

@@ -3,7 +3,15 @@ import {
     tryNuke,
     parseArguments
 } from "utils.js"
+import {
+    tcprint,
+    linesplitTop,
+    linesplitMiddle,
+    linesplitBottom,
+    cprint
+} from './utils/customprint.js'
 
+const maxLineLength = 70
 /** @param {NS} ns */
 export async function main(ns) {
     const defaults = {
@@ -11,6 +19,10 @@ export async function main(ns) {
     }
 
     const helpUsage = "Usage: run installBackdoor.js [--root='value']"
+
+    linesplitTop(ns, true, maxLineLength)
+    tcprint(ns, helpUsage, maxLineLength)
+    linesplitMiddle(ns, true, maxLineLength)
 
     // Parse the arguments
     const args = parseArguments(ns, ns.args, defaults)
@@ -20,12 +32,14 @@ export async function main(ns) {
         rootServer
     } = args
 
-    ns.print(`Root Server: ${rootServer}`)
+    tcprint(ns, `Root Server: ${rootServer}`, maxLineLength)
+    linesplitMiddle(ns, true, maxLineLength)
 
     // Statistics tracking
     let totalServers = 0
     let backdoorsInstalled = 0
     let skippedServers = 0
+    let failedServers = 0
 
     const serversToVisit = scanNetwork(ns, rootServer)
 
@@ -34,8 +48,8 @@ export async function main(ns) {
 
         // Check if server already has a backdoor
         if (ns.getServer(server).backdoorInstalled) {
-            ns.print(`Skipping ${server}, backdoor already installed`)
-            skippedServers++
+            tcprint(ns, `Skipping '${server}', backdoor already installed`, maxLineLength)
+            backdoorsInstalled++
             continue
         }
 
@@ -44,7 +58,7 @@ export async function main(ns) {
             try {
                 tryNuke(ns, server)
             } catch (e) {
-                ns.print(`Skipping ${server}, failed to gain root access: ${e.error}`)
+                tcprint(ns, `Skipping '${server}', failed to gain root access: ${e.error}`, maxLineLength)
                 skippedServers++
                 continue
             }
@@ -52,29 +66,34 @@ export async function main(ns) {
 
         // Verify root access again
         if (!ns.hasRootAccess(server)) {
-            ns.print(`Skipping ${server}, no Root access`)
+            tcprint(ns, `Skipping '${server}', no Root access`, maxLineLength)
             skippedServers++
             continue
         }
 
         // Attempt to install backdoor
         try {
-            ns.print(`Connecting to ${server} to install backdoor`)
+            linesplitMiddle(ns, true, maxLineLength)
+            tcprint(ns, `Connecting to '${server}' to install backdoor`, maxLineLength)
             ns.connect(server)
             await ns.installBackdoor()
-            ns.print(`Backdoor installed on ${server}`)
+            tcprint(ns, `Backdoor installed on '${server}'`, maxLineLength)
             backdoorsInstalled++
         } catch (e) {
-            ns.print(`Failed to install backdoor on ${server}: ${e.error}`)
-            skippedServers++
+            tcprint(ns, `Failed to install backdoor on '${server}': ${e.error}`, maxLineLength)
+            failedServers++
         } finally {
-            ns.connect("home") // Ensure return to home even on failure
+            // ns.connect("home") // Ensure return to home even on failure
+            linesplitMiddle(ns, true, maxLineLength)
         }
     }
 
     // Output final statistics
-    ns.tprint("----- Summary -----")
-    ns.tprint(`Total Servers Scanned: ${totalServers}`)
-    ns.tprint(`Backdoors Installed: ${backdoorsInstalled}`)
-    ns.tprint(`Skipped Servers: ${skippedServers}`)
+    cprint(ns, `─────[Summary]─────`, true, maxLineLength, '├')
+    linesplitMiddle(ns, true, maxLineLength)
+    tcprint(ns, `Total Servers Scanned: ${totalServers}`, maxLineLength)
+    tcprint(ns, `Backdoors Installed:   ${backdoorsInstalled}`, maxLineLength)
+    tcprint(ns, `Failed Servers:        ${failedServers}/${totalServers - skippedServers}`, maxLineLength)
+    tcprint(ns, `Skipped Servers:       ${skippedServers}/${totalServers - backdoorsInstalled}`, maxLineLength)
+    linesplitBottom(ns, true, maxLineLength)
 }

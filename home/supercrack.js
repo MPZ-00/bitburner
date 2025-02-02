@@ -2,7 +2,7 @@ import {
     scanNetwork
 } from 'utils.js'
 import {
-    linesplit,
+    linesplitMiddle,
     linesplitBottom,
     linesplitTop,
     tcprint
@@ -37,9 +37,9 @@ export async function main(ns) {
 
     for (const server of networkServers) {
         const hasRoot = ns.hasRootAccess(server)
-        const hasRequiredHackingLevel = ns.getServerRequiredHackingLevel(server)
-        if (hasRoot || hasRequiredHackingLevel > playerHackingLevel) {
-            tcprint(ns, `'${server}' ${hasRoot ? `already rooted.` : `${hasRequiredHackingLevel} hacking level required`}`)
+        const requiredHackingLevel = ns.getServerRequiredHackingLevel(server)
+        if (hasRoot || requiredHackingLevel > playerHackingLevel) {
+            tcprint(ns, `'${server}' ${hasRoot ? `already rooted.` : `${requiredHackingLevel} hacking level required`}`)
             totalServers--
             rootedServers += hasRoot
             continue
@@ -48,7 +48,7 @@ export async function main(ns) {
         rootedServers += ns.hasRootAccess(server)
     }
 
-    linesplit(ns, true)
+    linesplitMiddle(ns, true)
     tcprint(ns, `Cracked ${crackedServers}/${totalServers} servers. Using '${script}'`)
     tcprint(ns, `Rooted Servers: ${rootedServers}/${networkServers.length}`)
     linesplitBottom(ns, true)

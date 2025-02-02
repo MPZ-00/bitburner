@@ -1,5 +1,7 @@
 //! Script location home/utils/customprint.js
 
+import { maxLineLength } from "../minify/pasteme.js"
+
 /**
  * Prints a horizontal line split with customizable borders and character.
  *
@@ -10,7 +12,7 @@
  * @param {string} prefix - Prefix for the line (default: '├').
  * @param {string} suffix - Suffix for the line (default: '┤').
  */
-export function linesplit(ns, terminal = false, max = 50, char = "─", prefix = "├", suffix = "┤") {
+export function linesplit(ns, terminal = false, max = maxLineLength, char = "─", prefix = "├", suffix = "┤") {
     let maxLines = Math.max(max, 10) // Ensure a minimum line length
     maxLines -= (prefix.length + suffix.length) // Adjust for prefix and suffix
 
@@ -34,7 +36,7 @@ export function linesplit(ns, terminal = false, max = 50, char = "─", prefix =
  * @param {string} prefix - Prefix for the line (default: '├').
  * @param {string} suffix - Suffix for the line (default: '┤').
  */
-export function linesplitMiddle(ns, terminal = false, max = 50, char = "─", prefix = "├", suffix = "┤") {
+export function linesplitMiddle(ns, terminal = false, max = maxLineLength, char = "─", prefix = "├", suffix = "┤") {
     linesplit(ns, terminal, max, char, prefix, suffix)
 }
 
@@ -48,7 +50,7 @@ export function linesplitMiddle(ns, terminal = false, max = 50, char = "─", pr
  * @param {string} prefix - Prefix for the line (default: '┌').
  * @param {string} suffix - Suffix for the line (default: '┐').
  */
-export function linesplitTop(ns, terminal = false, max = 50, char = "─", prefix = "┌", suffix = "┐") {
+export function linesplitTop(ns, terminal = false, max = maxLineLength, char = "─", prefix = "┌", suffix = "┐") {
     linesplit(ns, terminal, max, char, prefix, suffix)
 }
 
@@ -62,7 +64,7 @@ export function linesplitTop(ns, terminal = false, max = 50, char = "─", prefi
  * @param {string} prefix - Prefix for the line (default: '└').
  * @param {string} suffix - Suffix for the line (default: '┘').
  */
-export function linesplitBottom(ns, terminal = false, max = 50, char = "─", prefix = "└", suffix = "┘") {
+export function linesplitBottom(ns, terminal = false, max = maxLineLength, char = "─", prefix = "└", suffix = "┘") {
     linesplit(ns, terminal, max, char, prefix, suffix)
 }
 
@@ -78,8 +80,8 @@ export function linesplitBottom(ns, terminal = false, max = 50, char = "─", pr
  * @param {string} prefix - Prefix for each line (default: '│').
  * @param {string} suffix - Suffix for each line (default: '│').
  */
-export function cprint(ns, args, terminal = false, max = 50, prefix = "│", suffix = "│") {
-    let maxLines = Math.max(max, 50) // Ensure minimum length
+export function cprint(ns, args, terminal = false, max = maxLineLength, prefix = "│", suffix = "│") {
+    let maxLines = Math.max(max, maxLineLength) // Ensure minimum length
     maxLines -= (prefix.length + suffix.length) // Adjust for prefix and suffix
 
     args = [args] // Ensure args is an array
@@ -120,6 +122,6 @@ export function cprint(ns, args, terminal = false, max = 50, prefix = "│", suf
  * @param {string[]} args - Array of strings to print.
  * @param {number} max - Maximum width of the text (default: 50).
  */
-export function tcprint(ns, args, max = 50) {
+export function tcprint(ns, args, max = maxLineLength) {
     cprint(ns, args, true, max)
 }

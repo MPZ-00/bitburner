@@ -199,11 +199,26 @@ export class CustomPrint {
     }
 
     /**
+     * Get's the border and character preset for the CustomPrint class
+     * @param {any} preset - The preset to get the config
+     * @returns {CustomPrint.PRESETS}
+     */
+    getConfig(preset) {
+        if (preset === typeof CustomPrint.PRESETS) {
+            return preset
+        }
+        if (preset in CustomPrint.PRESETS) {
+            return CustomPrint.PRESETS[preset]
+        }
+        return CustomPrint.PRESETS.single
+    }
+    /**
      * Set's the border and character preset for the CustomPrint class
      * @param {PRESETS} preset 
      */
     setPreset(preset) {
-        const config = CustomPrint.PRESETS[preset] || CustomPrint.PRESETS.single
+        const config = getConfig(preset)
+
         this.middleChar = config.middleChar
         this.topChar = config.topChar
         this.bottomChar = config.bottomChar

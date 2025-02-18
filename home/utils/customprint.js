@@ -15,7 +15,7 @@ import {
  * @param {string} suffix - Suffix for the line (default: '┤').
  */
 export function linesplit(ns, terminal = false, max = maxLineLength, char = "─", prefix = "├", suffix = "┤") {
-    let maxLines = Math.max(max, 10) // Ensure a minimum line length
+    let maxLines = Math.max(max, this.minLineLength) // Ensure a minimum line length
     maxLines -= (prefix.length + suffix.length) // Adjust for prefix and suffix
 
     const line = char.repeat(maxLines)
@@ -128,7 +128,7 @@ export function tcprint(ns, args, max = maxLineLength) {
     cprint(ns, args, true, max)
 }
 
-class CustomPrint {
+export class CustomPrint {
     /**
      * Initializes the CustomPrint class with a Bitburner NS object and optional default values.
      *
@@ -148,7 +148,9 @@ class CustomPrint {
         middlePrefix = '├', middleSuffix = '┤', topPrefix = '┌', topSuffix = '┐',
         bottomPrefix = '└', bottomSuffix = '┘') {
         this.ns = ns
-        this.maxLineLength = Math.max(max, 10); // Ensure a minimum line length
+
+        this.minLineLength = 10 // Minimum length for a line
+        this.maxLineLength = Math.max(max, this.minLineLength)
         this.middleChar = middleChar
         this.topChar = topChar
         this.bottomChar = bottomChar
@@ -170,7 +172,7 @@ class CustomPrint {
      * @param {string} [suffix='┤'] - Suffix for the line (default: '┤').
      */
     linesplit(terminal = false, max = this.maxLineLength, char = "─", prefix = "├", suffix = "┤") {
-        let maxLines = Math.max(max, 10) // Ensure a minimum line length
+        let maxLines = Math.max(max, this.minLineLength) // Ensure a minimum line length
         maxLines -= (prefix.length + suffix.length) // Adjust for prefix and suffix
 
         const line = char.repeat(maxLines)
@@ -222,7 +224,7 @@ class CustomPrint {
      * @param {string} [suffix='│'] - Suffix for each line (default: '│').
      */
     cprint(args, terminal = false, max = this.maxLineLength, prefix = "│", suffix = "│") {
-        let maxLines = Math.max(max, 10) // Ensure minimum length
+        let maxLines = Math.max(max, this.minLineLength) // Ensure minimum length
         maxLines -= (prefix.length + suffix.length) // Adjust for prefix and suffix
 
         if (!Array.isArray(args)) args = [args]; // Ensure args is an array
@@ -265,5 +267,3 @@ class CustomPrint {
         this.cprint(args, true)
     }
 }
-
-export default CustomPrint

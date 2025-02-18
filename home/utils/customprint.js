@@ -129,37 +129,82 @@ export function tcprint(ns, args, max = maxLineLength) {
 }
 
 export class CustomPrint {
+    static PRESETS = {
+        single: {
+            middleChar: '─',
+            topChar: '─',
+            bottomChar: '─',
+            middlePrefix: '├',
+            middleSuffix: '┤',
+            topPrefix: '┌',
+            topSuffix: '┐',
+            bottomPrefix: '└',
+            bottomSuffix: '┘'
+        },
+        double: {
+            middleChar: '═',
+            topChar: '═',
+            bottomChar: '═',
+            middlePrefix: '╠',
+            middleSuffix: '╣',
+            topPrefix: '╔',
+            topSuffix: '╗',
+            bottomPrefix: '╚',
+            bottomSuffix: '╝'
+        },
+        mixed: {
+            middleChar: '─',
+            topChar: '═',
+            bottomChar: '═',
+            middlePrefix: '╞',
+            middleSuffix: '╡',
+            topPrefix: '╒',
+            topSuffix: '╕',
+            bottomPrefix: '╘',
+            bottomSuffix: '╛'
+        },
+        thickThin: {
+            middleChar: '─',
+            topChar: '─',
+            bottomChar: '─',
+            middlePrefix: '╟',
+            middleSuffix: '╢',
+            topPrefix: '╓',
+            topSuffix: '╖',
+            bottomPrefix: '╙',
+            bottomSuffix: '╜'
+        }
+    }
+
     /**
      * Initializes the CustomPrint class with a Bitburner NS object and optional default values.
-     *
      * @param {NS} ns - Bitburner NS object.
      * @param {number} [max=50] - Default maximum length of the line (default: 50).
-     * @param {string} [middleChar='─'] - Character used for middle lines (default: '─').
-     * @param {string} [topChar='─'] - Character used for top lines (default: '─').
-     * @param {string} [bottomChar='─'] - Character used for bottom lines (default: '─').
-     * @param {string} [middlePrefix='├'] - Prefix for middle lines (default: '├').
-     * @param {string} [middleSuffix='┤'] - Suffix for middle lines (default: '┤').
-     * @param {string} [topPrefix='┌'] - Prefix for top lines (default: '┌').
-     * @param {string} [topSuffix='┐'] - Suffix for top lines (default: '┐').
-     * @param {string} [bottomPrefix='└'] - Prefix for bottom lines (default: '└').
-     * @param {string} [bottomSuffix='┘'] - Suffix for bottom lines (default: '┘').
+     * @param {PRESETS} preset 
      */
-    constructor(ns, max = 50, middleChar = '─', topChar = '─', bottomChar = '─',
-        middlePrefix = '├', middleSuffix = '┤', topPrefix = '┌', topSuffix = '┐',
-        bottomPrefix = '└', bottomSuffix = '┘') {
+    constructor(ns, max = 50, preset = 'single') {
         this.ns = ns
-
-        this.minLineLength = 10 // Minimum length for a line
+        this.minLineLength = 10
         this.maxLineLength = Math.max(max, this.minLineLength)
-        this.middleChar = middleChar
-        this.topChar = topChar
-        this.bottomChar = bottomChar
-        this.middlePrefix = middlePrefix
-        this.middleSuffix = middleSuffix
-        this.topPrefix = topPrefix
-        this.topSuffix = topSuffix
-        this.bottomPrefix = bottomPrefix
-        this.bottomSuffix = bottomSuffix
+
+        this.setPreset(preset)
+    }
+
+    /**
+     * Set's the border and character preset for the CustomPrint class
+     * @param {PRESETS} preset 
+     */
+    setPreset(preset) {
+        const config = CustomPrint.PRESETS[preset] || CustomPrint.PRESETS.single
+        this.middleChar = config.middleChar
+        this.topChar = config.topChar
+        this.bottomChar = config.bottomChar
+        this.middlePrefix = config.middlePrefix
+        this.middleSuffix = config.middleSuffix
+        this.topPrefix = config.topPrefix
+        this.topSuffix = config.topSuffix
+        this.bottomPrefix = config.bottomPrefix
+        this.bottomSuffix = config.bottomSuffix
     }
 
     /**
@@ -172,17 +217,11 @@ export class CustomPrint {
      * @param {string} [suffix='┤'] - Suffix for the line (default: '┤').
      */
     linesplit(terminal = false, max = this.maxLineLength, char = "─", prefix = "├", suffix = "┤") {
-        let maxLines = Math.max(max, this.minLineLength) // Ensure a minimum line length
-        maxLines -= (prefix.length + suffix.length) // Adjust for prefix and suffix
-
+        let maxLines = Math.max(max, this.minLineLength) - (prefix.length + suffix.length)
         const line = char.repeat(maxLines)
         const lineSplit = prefix + line + suffix
 
-        if (terminal) {
-            this.ns.tprint(lineSplit)
-        } else {
-            this.ns.print(lineSplit)
-        }
+        terminal ? this.ns.tprint(lineSplit) : this.ns.print(lineSplit)
     }
 
     /**
@@ -224,37 +263,24 @@ export class CustomPrint {
      * @param {string} [suffix='│'] - Suffix for each line (default: '│').
      */
     cprint(args, terminal = false, max = this.maxLineLength, prefix = "│", suffix = "│") {
-        let maxLines = Math.max(max, this.minLineLength) // Ensure minimum length
-        maxLines -= (prefix.length + suffix.length) // Adjust for prefix and suffix
+        let maxLines = Math.max(max, this.minLineLength) - (prefix.length + suffix.length)
 
-        if (!Array.isArray(args)) args = [args]; // Ensure args is an array
-        const words = args.join(' ').split(' ') // Split text into words
+        if (!Array.isArray(args)) args = [args]
+        const words = args.join(' ').split(' ')
         let currentLine = ''
 
         for (const word of words) {
             if ((currentLine + word).length > maxLines) {
-                // Print the current line and reset
                 const paddedLine = currentLine.padEnd(maxLines, ' ')
-                const lineSplit = prefix + paddedLine + suffix
-                if (terminal) {
-                    this.ns.tprint(lineSplit)
-                } else {
-                    this.ns.print(lineSplit)
-                }
+                terminal ? this.ns.tprint(prefix + paddedLine + suffix) : this.ns.print(prefix + paddedLine + suffix)
                 currentLine = ''
             }
             currentLine += (currentLine.length > 0 ? ' ' : '') + word
         }
 
-        // Print any remaining text
         if (currentLine.length > 0) {
             const paddedLine = currentLine.padEnd(maxLines, ' ')
-            const lineSplit = prefix + paddedLine + suffix
-            if (terminal) {
-                this.ns.tprint(lineSplit)
-            } else {
-                this.ns.print(lineSplit)
-            }
+            terminal ? this.ns.tprint(prefix + paddedLine + suffix) : this.ns.print(prefix + paddedLine + suffix)
         }
     }
 

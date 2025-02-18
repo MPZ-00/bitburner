@@ -139,7 +139,9 @@ export class CustomPrint {
             topPrefix: '┌',
             topSuffix: '┐',
             bottomPrefix: '└',
-            bottomSuffix: '┘'
+            bottomSuffix: '┘',
+            printPrefix: '│',
+            printSuffix: '│'
         },
         double: {
             middleChar: '═',
@@ -150,7 +152,9 @@ export class CustomPrint {
             topPrefix: '╔',
             topSuffix: '╗',
             bottomPrefix: '╚',
-            bottomSuffix: '╝'
+            bottomSuffix: '╝',
+            printPrefix: '║',
+            printSuffix: '║'
         },
         mixed: {
             middleChar: '─',
@@ -161,7 +165,9 @@ export class CustomPrint {
             topPrefix: '╒',
             topSuffix: '╕',
             bottomPrefix: '╘',
-            bottomSuffix: '╛'
+            bottomSuffix: '╛',
+            printPrefix: '│',
+            printSuffix: '│'
         },
         thickThin: {
             middleChar: '─',
@@ -172,7 +178,9 @@ export class CustomPrint {
             topPrefix: '╓',
             topSuffix: '╖',
             bottomPrefix: '╙',
-            bottomSuffix: '╜'
+            bottomSuffix: '╜',
+            printPrefix: '║',
+            printSuffix: '║'
         }
     }
 
@@ -205,6 +213,8 @@ export class CustomPrint {
         this.topSuffix = config.topSuffix
         this.bottomPrefix = config.bottomPrefix
         this.bottomSuffix = config.bottomSuffix
+        this.printPrefix = config.printPrefix
+        this.printSuffix = config.printSuffix
     }
 
     /**
@@ -262,8 +272,8 @@ export class CustomPrint {
      * @param {string} [prefix='│'] - Prefix for each line (default: '│').
      * @param {string} [suffix='│'] - Suffix for each line (default: '│').
      */
-    cprint(args, terminal = false, max = this.maxLineLength, prefix = "│", suffix = "│") {
-        let maxLines = Math.max(max, this.minLineLength) - (prefix.length + suffix.length)
+    cprint(args, terminal = false, max = this.maxLineLength) {
+        let maxLines = Math.max(max, this.minLineLength) - (this.printPrefix.length + this.printSuffix.length)
 
         if (!Array.isArray(args)) args = [args]
         const words = args.join(' ').split(' ')

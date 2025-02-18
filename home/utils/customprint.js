@@ -273,7 +273,9 @@ export class CustomPrint {
      * @param {string} [suffix='│'] - Suffix for each line (default: '│').
      */
     cprint(args, terminal = false, max = this.maxLineLength) {
-        let maxLines = Math.max(max, this.minLineLength) - (this.printPrefix.length + this.printSuffix.length)
+        let prefix = this.printPrefix
+        let suffix = this.printSuffix
+        let maxLines = Math.max(max, this.minLineLength) - (prefix.length + suffix.length)
 
         if (!Array.isArray(args)) args = [args]
         const words = args.join(' ').split(' ')

@@ -1,124 +1,135 @@
-/** @param {NS} ns */
+// Constants
+const scriptTimer = 6000 // Time script waits between checks (ms)
+const moneyKeep = 100000 // Minimum money to keep before investing
+
+// Trading Conditions
+const stockBuyOver_Long = 75 // Buy long if forecast is above this percentage
+const stockBuyUnder_Short = -25 // Buy short if forecast is below this percentage
+const stockVolatility = 1.5 // Maximum allowed volatility for trading (adjust as needed)
+
+// Variables to track portfolio and performance
+let currentStocks = {} // Track owned stocks
+let totalInvested = 0
+let profitLoss = 0
+
+/**
+ * @param {NS} ns 
+ */
 export async function main(ns) {
-    while (true) {
-        await checkStocks()
-        await new Promise(resolve => setTimeout(resolve, scriptTimer))
-    }
-}
-
-async function getForecast(symbol) {
     try {
-        const forecast = ns.stock.getForecast(symbol)
-        return forecast
-    } catch (e) {
-        console.log(`Error getting forecast for ${symbol}:`, e.message)
-        return null
-    }
-}
+        while (true) { // Infinite loop based on scriptTimer
 
-async function checkStocks() {
-    try {
-        if (ns.money < moneyKeep) return
-
-        let symbols = await ns.stock.getSymbols()
-        
-        const forecasts = {}
-        for (let sym of symbols) {
-            forecasts[sym] = await getForecast(sym)
-        }
-
-        for (let symbol in forecasts) {
-            if (!forecasts.hasOwnProperty(symbol)) continue
-            
-            const currentPriceAsk = ns.stock.getAskPrice(symbol)
-            const currentPriceBid = ns.stock.getBidPrice(symbol)
-            const volatility = TIX.getVolatility(symbol); // Assuming this exists
-            let sharesLong = ns.stock.getShares(symbol, 'long')
-            let sharesShort = ns.stock.getShares(symbol, 'short')
-
-            if (!currentPriceAsk || !currentPriceBid) continue
-
-            const avgPrice = (currentPriceAsk + currentPriceBid) / 2
-            
-            // Buy Conditions
-            if ((forecasts[symbol] > stockBuyOver_Long || 
-                forecasts[symbol] < -stockBuyUnder_Short) &&
-                volatility <= stockVolatility) {
-                
-                let maxSharesToBuy = ns.money * (maxSharePercent)
-                const sharesPossible = Math.floor(maxSharesToBuy / currentPriceAsk)
-
-                if (forecasts[symbol] > stockBuyOver_Long && !sharesLong) {
-                    await buyStock(symbol, 'long', sharesPossible)
-                    sendNotification(`Bought ${symbol} Long`)
-                } else if (forecasts[symbol] < -stockBuyUnder_Short && shortUnlock && !sharesShort) {
-                    await sellStock(symbol, 'short', sharesPossible); // Use appropriate function
-                    sendNotification(`Sold Short on ${symbol}`)
-                }
+            // Check if we have enough money to keep as per failsafe
+            const currentMoney = await ns.getAccount()
+            if (currentMoney < moneyKeep) {
+                ns.toast(`Failsafe: Current balance below ${moneyKeep}.`, 'error')
+                break
             }
 
-            // Sell Conditions
-            if ((currentPriceAsk / avgPrice > 1.05 || 
-                currentPriceBid / avgPrice < 0.95) ||
-                forecasts[symbol] <= sellThreshold_Long ||
-                (shortUnlock && forecasts[symbol] >= -sellThreshold_Short)) {
-                
-                if (sharesLong > minSharePercent) {
-                    await sellStock(symbol, 'long', sharesLong)
-                    sendNotification(`Sold Long on ${symbol}`)
+            // Get all available stocks data from Bitburner's API
+            const stockData = await getStocks()
+
+            for (const sym in stockData) {
+                if (!stockData[sym]) continue
+
+                const stock = stockData[sym]
+
+                // Check conditions for buying long or short based on forecast and volatility
+                if ((stock.forecast > stockBuyOver_Long || stock.forecast < stockBuyUnder_Short)) {
+                    if (Math.abs(stock.volatility) <= stockVolatility) {
+                        evaluateTrade(sym, stock)
+                    }
                 }
-                if (shortsSharesShort > minSharePercent) { // Adjust as needed
-                    await buyStock(symbol, 'short', shortsPossible); // Use appropriate function
-                    sendNotification(`Covered Short on ${symbol}`)
-                }
+
             }
 
+            await new Promise(resolve => setTimeout(resolve, scriptTimer))
         }
-    } catch (e) {
-        console.log("Error in checkStocks:", e.message)
+    } catch (error) {
+        ns.toast(`Error in main loop: ${error.message}`, 'error')
+        ns.exit() // Terminate the script
     }
 }
 
-async function handleStocks(symbol, type, shares) {
+// Function to get all available stocks data from Bitburner's API
+async function getStocks() {
     try {
-        if (!shares || !symbol) return
-        
-        const price = ns.stock.getAskPrice(type === 'long' ? symbol : `-${symbol}`)
-        const totalCost = shares * price
+        const stockData = {}
+        for (let i = 1; i <= 20; i++) { // Assuming up to 20 stocks are available
+            const sym = `STOCK${i}`
+            const data = await ns.tix.getBonusTime(sym)
+            if (!data) continue
 
-        if (ns.money >= totalCost && maxSharePercent) {
-            await buyStock(symbol, type, shares)
-            sendNotification(`Handled ${shares}x${symbol} successfully`)
+            stockData[sym] = {
+                symbol: sym,
+                price: data.price,
+                forecast: data.forecast,
+                volatility: data.volatility
+            }
         }
-    } catch (e) {
-        console.log("Error handling stocks:", e.message)
+        return stockData
+    } catch (error) {
+        ns.toast(`Failed to get stocks data: ${error.message}`, 'warning')
+        return {}
     }
 }
 
-function sendNotification(message) {
-    ns.toast(message, 'green', 5000); // Adjust colors and timing as needed
-}
-
-async function buyStock(symbol, type, shares) {
+// Function to evaluate and execute trades based on conditions
+async function evaluateTrade(sym, stock) {
     try {
-        if (!shares || !symbol) return
-        
-        const price = ns.stock.getAskPrice(type === 'long' ? symbol : `-${symbol}`)
-        await ns.stock.buy(symbol, type, shares)
-    } catch (e) {
-        console.log("Error buying stock:", e.message)
+        const currentPrice = await ns.tix.getBidPrice(sym)
+
+        if (currentStocks[sym]) {
+            // Already holding this stock check for exit condition or add more logic here
+            return
+        }
+
+        let tradeAmount
+
+        if (stock.forecast > stockBuyOver_Long) {
+            // Buy Long Condition
+            const investment = Math.min(moneyKeep, ns.getAccount() - moneyKeep)
+            tradeAmount = investment / currentPrice
+            await ns.tix.buy(sym, 'long', tradeAmount)
+
+            totalInvested += investment
+            profitLoss -= (currentPrice * tradeAmount) // Track PnL
+        } else if (stock.forecast < stockBuyUnder_Short) {
+            // Buy Short Condition
+            const investment = Math.min(moneyKeep, ns.getAccount() - moneyKeep)
+            tradeAmount = investment / currentPrice
+            await ns.tix.buy(sym, 'short', tradeAmount)
+
+            totalInvested += investment
+            profitLoss -= (currentPrice * tradeAmount) // Track PnL
+        }
+
+        updatePortfolio() // Update portfolio display
+
+    } catch (error) {
+        ns.toast(`Trade failed for ${sym}: ${error.message}`, 'warning')
     }
 }
 
-async function sellStock(symbol, type, shares) {
+// Function to update and display the current portfolio status
+function updatePortfolio() {
+    const totalValue = Object.values(currentStocks).reduce((acc, stock) =>
+        acc + (stock.position * stock.price), 0)
+
+    ns.toast(`Portfolio Update:
+    Total Invested: ${totalInvested}
+    Current Value: ${totalValue}
+    Profit/Loss: ${profitLoss}`, 'info')
+}
+
+// Initial portfolio setup
+export async function init() {
     try {
-        if (!shares || !symbol) return
-        
-        const price = ns.stock.getBidPrice(type === 'long' ? symbol : `-${symbol}`)
-        await ns.stock.sell(symbol, type, shares)
-    } catch (e) {
-        console.log("Error selling stock:", e.message)
+        currentStocks = await getStocks()
+        updatePortfolio()
+
+    } catch (error) {
+        ns.toast(`Initialization failed: ${error.message}`, 'error')
+        ns.exit()
     }
 }
-
-init()

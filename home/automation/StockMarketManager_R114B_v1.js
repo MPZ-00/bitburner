@@ -3,20 +3,20 @@ export async function main(ns) {
     const config = {
         scriptTimer: 6000,
         moneyKeep: 100_000_000,
-        stockBuyOver_Long: 0.60,
-        stockBuyUnder_Short: 0.40,
+        stockBuyOver_Long: 0.6,
+        stockBuyUnder_Short: 0.4,
         stockVolatility: 0.05,
         minSharePercent: 5,
-        maxSharePercent: 1.00,
+        maxSharePercent: 1.0,
         sellThreshold_Long: 0.55,
-        sellThreshold_Short: 0.40
+        sellThreshold_Short: 0.4,
     }
 
     const toastConfig = {
         duration: 15000,
         extraFormats: [1e15, 1e18, 1e21, 1e24, 1e27, 1e30],
         extraNotations: ["q", "Q", "s", "S", "o", "n"],
-        decimalPlaces: 3
+        decimalPlaces: 3,
     }
 
     class StockManager {
@@ -28,7 +28,7 @@ export async function main(ns) {
 
         async getPrices() {
             const companies = await this.ns.stock.getCompanies()
-            return Promise.all(companies.map(c => this.ns.stock.getPrice(c)))
+            return Promise.all(companies.map((c) => this.ns.stock.getPrice(c)))
         }
 
         isPublicCompany(company) {
@@ -37,7 +37,10 @@ export async function main(ns) {
 
         calculateVolatility(priceHistory, days = 7) {
             // Calculate average volatility over the last 'days' of trading
-            const avg = priceHistory.slice(-days).reduce((a, b) => a + b.volatilityChange, 0) / days
+            const avg =
+                priceHistory
+                    .slice(-days)
+                    .reduce((a, b) => a + b.volatilityChange, 0) / days
             return Math.abs(avg)
         }
 
@@ -45,23 +48,34 @@ export async function main(ns) {
             if (!this.isPublicCompany(company)) return null
 
             // Check volatility thresholds first
-            if (priceData.history[this.calculateVolatility(priceData.history)] > config.stockVolatility)
-                return 'hold'
+            if (
+                priceData.history[this.calculateVolatility(priceData.history)] >
+                config.stockVolatility
+            )
+                return "hold"
 
             const forecast = await this.ns.stock.getForecast(company)
 
             let action
-            if (forecast >= config.stockBuyOver_Long && !this.shares.has(company.name)) {
-                action = 'buy'
-            } else if (forecast <= config.stockBuyUnder_Short && !this.shares.has(company.name)) {
-                action = 'short'
+            if (
+                forecast >= config.stockBuyOver_Long &&
+                !this.shares.has(company.name)
+            ) {
+                action = "buy"
+            } else if (
+                forecast <= config.stockBuyUnder_Short &&
+                !this.shares.has(company.name)
+            ) {
+                action = "short"
             }
 
             // Check sell thresholds
             const currentShares = this.shares.get(company.name) || 0
-            if ((currentShares > 0 && forecast < config.sellThreshold_Long) ||
-                (currentShares < 0 && forecast > config.sellThreshold_Short)) {
-                return 'sell_all'
+            if (
+                (currentShares > 0 && forecast < config.sellThreshold_Long) ||
+                (currentShares < 0 && forecast > config.sellThreshold_Short)
+            ) {
+                return "sell_all"
             }
 
             return action
@@ -77,7 +91,7 @@ export async function main(ns) {
 
         async sellAllShares() {
             for (const [company, shares] of this.stockMgr.shares.entries()) {
-                if (shares > 0 && await this.ns.stock.hasShares(company)) {
+                if (shares > 0 && (await this.ns.stock.hasShares(company))) {
                     const sold = await this.ns.stock.sellShare(company)
                     if (sold) ns.toast.create(`${company}: Sold ${sold} shares`)
                 }
@@ -101,7 +115,7 @@ export async function main(ns) {
             for (const company of companies) {
                 if (!stockMgr.isPublicCompany(company)) continue
 
-                const priceData = await ns.stock.getPrice(company)
+                const priceData = ns.stock.getPrice(company)
 
                 // Get current holdings
                 let sharesHeld = stockMgr.shares.get(company.name) || 0
@@ -109,24 +123,29 @@ export async function main(ns) {
                 // Process orders and update positions
                 const action = await stockMgr.decideAction(company, priceData)
 
-                if (action === 'buy') {
-                    if (sharesHeld < config.maxSharePercent &&
-                        ns.money > ns.stock.getPrice(company)) {
+                if (action === "buy") {
+                    if (
+                        sharesHeld < config.maxSharePercent &&
+                        ns.money > ns.stock.getPrice(company)
+                    ) {
                         orderMgr.createOrder({
-                            type: 'buy',
+                            type: "buy",
                             company,
-                            amount: Math.min(config.maxSharePercent, 100 - sharesHeld)
+                            amount: Math.min(
+                                config.maxSharePercent,
+                                100 - sharesHeld
+                            ),
                         })
                     }
-                } else if (action === 'short') {
+                } else if (action === "short") {
                     // Implement short selling logic
-                } else if (action === 'sell_all') {
+                } else if (action === "sell_all") {
                     orderMgr.sellAllShares()
                 }
             }
         } catch (error) {
             ns.toast.create(`Error: ${error.message}`, {
-                duration: 5000
+                duration: toastConfig.duration,
             })
         }
     }

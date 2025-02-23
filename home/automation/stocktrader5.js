@@ -5,7 +5,7 @@ export async function main(ns) {
     ns.tail()
 
     // Globals
-    const scriptTimer = 6000 // Time script waits
+    const scriptTimer = 2000 // Time script waits
     const moneyKeep = 1000000000 // Failsafe Money
     //const moneyKeep = 1000000
     const stockBuyOver_Long = 0.60 // Buy stocks when forecast is over this %
